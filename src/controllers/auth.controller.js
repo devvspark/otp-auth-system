@@ -1,6 +1,6 @@
 import { authHealthService } from "../services/auth.service.js";
 import { verifyOtp,storeOtp } from "../services/auth.service.js";
-
+import { generateToken } from "../utils/jwt.js";
 
 export const authHealthCheck = (req, res) => {
       const result=authHealthService();
@@ -33,7 +33,7 @@ export const sendOtpController = async (req, res) => {
 
     // 3️⃣ Generate & store OTP
     const otp = await storeOtp(email);
-    // console.log("OTP stored for", email, otp);
+    console.log("OTP stored for", email, otp);
 
     return res.status(200).json({
       success: true,
@@ -80,7 +80,14 @@ try {
     return res.status(400).json(result);
   }
 
-  return res.status(200).json(result);
+  // ✅ OTP verified → generate JWT
+  const token = generateToken({ email });
+  
+  return res.status(200).json({
+    success: true,
+    message: "OTP verified successfully",
+    token,
+  });
 } catch (error) {
   return res.status(500).json({
     success: false,
@@ -89,3 +96,11 @@ try {
 }
 };
 
+
+
+export const getMeController = (req, res) => {
+  return res.status(200).json({
+    success: true,
+    user: req.user,
+  });
+};
