@@ -78,13 +78,56 @@ export const sendOtpWhatsAppService = async (phone) => {
   };
 };
 
-export const verifyOtp = async (email, userOtp) => {
-  const key = `otp:email:${email}`;
+// export const verifyOtp = async (email, userOtp) => {
+//   const key = `otp:email:${email}`;
 
-  // 1. get stored OTP from Redis
+//   // 1. get stored OTP from Redis
+//   const storedOtp = await redis.get(key);
+
+//   // 2. check if OTP exists (expired or not requested)
+//   if (!storedOtp) {
+//     return {
+//       success: false,
+//       message: "OTP expired or not found",
+//     };
+//   }
+
+//   // 3. compare OTPs
+//   if (storedOtp !== userOtp) {
+//     return {
+//       success: false,
+//       message: "Invalid OTP",
+//     };
+//   }
+
+//   // 4. OTP is valid → delete it (one-time use)
+//   await redis.del(key);
+
+//   return {
+//     success: true,
+//     message: "OTP verified successfully",
+//   };
+// };
+
+
+
+/// handling alll three verifications in one function
+export const verifyOtp = async (identifier, type, userOtp) => {
+  const allowedTypes = ["email", "phone", "whatsapp"];
+
+  // 1. Validate type
+  if (!allowedTypes.includes(type)) {
+    return {
+      success: false,
+      message: "Invalid OTP type",
+    };
+  }
+
+  const key = `otp:${type}:${identifier}`;
+
+  // 2. Get stored OTP from Redis
   const storedOtp = await redis.get(key);
 
-  // 2. check if OTP exists (expired or not requested)
   if (!storedOtp) {
     return {
       success: false,
@@ -92,7 +135,7 @@ export const verifyOtp = async (email, userOtp) => {
     };
   }
 
-  // 3. compare OTPs
+  // 3. Compare OTP
   if (storedOtp !== userOtp) {
     return {
       success: false,
@@ -100,7 +143,7 @@ export const verifyOtp = async (email, userOtp) => {
     };
   }
 
-  // 4. OTP is valid → delete it (one-time use)
+  // 4. Delete OTP (one-time use)
   await redis.del(key);
 
   return {
