@@ -3,6 +3,8 @@
 // Request → Route → Controller → Service → Controller → Response
 import redis from "../config/redis.js";
 import { sendEmail } from "../utils/email.js";
+import { sendSMS } from "../utils/sms.js";
+import { sendWhatsApp } from "../utils/whatsapp.js";
 export const authHealthService = () => {
     return {
       status: "Auth service is working",
@@ -18,27 +20,63 @@ export const generateOtp = () => {
 
   //   console.log(generateOtp());
   
+export const storeOtp = async (identifierKey) => {
+  const otp = generateOtp();
+
+  await redis.set(identifierKey, otp, "EX", 300);
+
+  return otp;
+};
 
 
-  export const storeOtp = async (email) => {
-    const otp = generateOtp();
-    const key = `otp:email:${email}`;
-  
-    // store OTP in Redis with 5 min expiry
-    await redis.set(key, otp, "EX", 300);
-  
-    // send OTP via email
-    await sendEmail(
-      email,
-      "Your OTP Code",
-      `Your OTP is: ${otp}\nThis OTP is valid for 5 minutes.`
-    );
-  
-    return {
-      success: true,
-      message: "OTP sent to email",
-    };
+
+export const sendOtpEmailService = async (email) => {
+  const key = `otp:email:${email}`;
+  const otp = await storeOtp(key);
+
+  await sendEmail(
+    email,
+    "Your OTP Code",
+    `Your OTP is: ${otp}\nThis OTP is valid for 5 minutes.`
+  );
+
+  return {
+    success: true,
+    message: "OTP sent via email",
   };
+};
+
+
+export const sendOtpSmsService = async (phone) => {
+  const key = `otp:phone:${phone}`;
+  const otp = await storeOtp(key);
+
+  await sendSMS(
+    phone,
+    `Your OTP is ${otp}. It is valid for 5 minutes.`
+  );
+
+  return {
+    success: true,
+    message: "OTP sent via SMS",
+  };
+};
+
+
+export const sendOtpWhatsAppService = async (phone) => {
+  const key = `otp:whatsapp:${phone}`;
+  const otp = await storeOtp(key);
+
+  await sendWhatsApp(
+    phone,
+    `Your OTP is ${otp}. It is valid for 5 minutes.`
+  );
+
+  return {
+    success: true,
+    message: "OTP sent via WhatsApp",
+  };
+};
 
 export const verifyOtp = async (email, userOtp) => {
   const key = `otp:email:${email}`;
